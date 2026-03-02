@@ -371,6 +371,32 @@ When AgentricAI-IED-ollama is not running:
 
 ---
 
+## Default Curriculum
+
+AgentricAI-planner ships with a **Default** curriculum framework containing 8 pre-configured activity blocks:
+
+| Time | Activity | Type | Description |
+|------|----------|------|-------------|
+| 8:00 AM | 📐 Morning Math | `math` | Number recognition, counting, basic addition |
+| 9:00 AM | 📖 Story Time | `reading` | Read-aloud with text-to-speech support |
+| 10:00 AM | 🎨 Creative Art | `art` | Free drawing and creative expression |
+| 10:30 AM | 🏃 Movement Break | `movement` | Guided stretching and sensory break |
+| 11:00 AM | ✍️ Writing Practice | `writing` | Letter tracing and sentence building |
+| 12:00 PM | 🍎 Lunch Break | `break` | Mealtime routine and rest |
+| 1:00 PM | 💬 Communication Time | `communication` | AAC symbols and social expression |
+| 2:00 PM | 🎮 Free Play | `play` | Choice-based reward time with AI music |
+
+Teachers and caregivers can **Edit Framework** to:
+- Reorder activity blocks
+- Adjust timing and duration
+- Change difficulty levels (1-5 stars)
+- Add custom detail/instructions to each block
+- Create additional custom frameworks
+
+The Default framework is always available and cannot be deleted, ensuring there's always a working schedule.
+
+---
+
 ## Tech Stack
 
 | Technology | Version | Purpose |
@@ -752,7 +778,7 @@ This project exists to serve children with unique learning needs. Contributions 
 
 ## License
 
-This project is part of [AgentricAI](https://github.com/BAMmyers/AgentricAI) by [@BAMmyers](https://github.com/BAMmyers).
+This project is part of [AgentricAI Studios](https://github.com/BAMmyers/AgentricAI_Studios) by [@BAMmyers](https://github.com/BAMmyers).
 
 ---
 

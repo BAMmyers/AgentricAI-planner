@@ -31,16 +31,11 @@ export default function StudentMode({ profile, onBack }: StudentModeProps) {
     hiveAgentDefs.map(a => ({ ...a }))
   );
 
-  // Load schedule on mount
+  // Load schedule on mount — always has default if nothing else
   useEffect(() => {
     const load = async () => {
       setIsLoading(true);
-      let schedule = await dataStore.getSchedule();
-
-      if (schedule.length === 0) {
-        schedule = await dataStore.generateSchedule(profile);
-      }
-
+      const schedule = await dataStore.getSchedule();
       setTasks(schedule);
       setIsLoading(false);
     };
@@ -236,79 +231,48 @@ Focus on effort and growth. Communication mode: ${profile.communicationMode}.`;
             {getGreeting()}, <span className="text-indigo-400">{profile.name}</span>! 👋
           </h1>
           <p className="text-gray-400">
-            {tasks.length === 0
-              ? "Your schedule is being prepared. Connect AgentricAI-IED-ollama to generate activities."
-              : hiveState === 'awaiting'
-                ? "Your learning companions are ready! Tap an activity to begin."
-                : "You're doing great! Keep going!"}
+            {hiveState === 'awaiting'
+              ? "Your learning companions are ready! Tap an activity to begin."
+              : "You're doing great! Keep going!"}
           </p>
         </div>
 
-        {/* Backend connection notice */}
-        {tasks.length === 0 && (
-          <div className="mb-8 bg-amber-500/10 border border-amber-500/30 rounded-xl p-6 text-center">
-            <p className="text-amber-300 mb-2">
-              <strong>No schedule available.</strong>
-            </p>
-            <p className="text-sm text-neutral-400 mb-4">
-              Start <code className="bg-neutral-800 px-2 py-0.5 rounded text-xs">AgentricAI-IED-ollama</code> at{' '}
-              <code className="bg-neutral-800 px-2 py-0.5 rounded text-xs">http://localhost:11434</code>{' '}
-              to generate an AI-driven daily schedule.
-            </p>
-            <button
-              onClick={async () => {
-                setIsLoading(true);
-                const schedule = await dataStore.generateSchedule(profile);
-                setTasks(schedule);
-                setIsLoading(false);
-              }}
-              className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors"
-            >
-              Retry Schedule Generation
-            </button>
-          </div>
-        )}
-
         {/* Progress Bar */}
-        {tasks.length > 0 && (
-          <>
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-400">Today's Progress</span>
-                <span className="text-sm font-bold text-indigo-400">{completedCount}/{totalCount} Complete</span>
-              </div>
-              <div className="h-3 bg-neutral-800 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500"
-                  style={{ width: `${progressPercent}%` }}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-gray-400">Today's Progress</span>
+            <span className="text-sm font-bold text-indigo-400">{completedCount}/{totalCount} Complete</span>
+          </div>
+          <div className="h-3 bg-neutral-800 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Activity Cards */}
+        <div className="mb-8">
+          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <span>📅</span>
+            <span>Today's Schedule</span>
+            {hiveState === 'awaiting' && (
+              <span className="text-sm font-normal text-amber-400 ml-2">— Tap to begin</span>
+            )}
+          </h2>
+
+          <div className="relative">
+            <div className="flex space-x-4 overflow-x-auto pb-4 scrollbar-hide">
+              {tasks.map((task) => (
+                <ActivityCard
+                  key={task.id}
+                  task={task}
+                  onStartTask={handleStartTask}
                 />
-              </div>
+              ))}
             </div>
-
-            {/* Activity Cards */}
-            <div className="mb-8">
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <span>📅</span>
-                <span>Today's Schedule</span>
-                {hiveState === 'awaiting' && (
-                  <span className="text-sm font-normal text-amber-400 ml-2">— Tap to begin</span>
-                )}
-              </h2>
-
-              <div className="relative">
-                <div className="flex space-x-4 overflow-x-auto pb-4 scrollbar-hide">
-                  {tasks.map((task) => (
-                    <ActivityCard
-                      key={task.id}
-                      task={task}
-                      onStartTask={handleStartTask}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-          </>
-        )}
+          </div>
+        </div>
 
         {/* Agent Status */}
         <div className="bg-neutral-800/50 rounded-xl p-4 border border-neutral-700">

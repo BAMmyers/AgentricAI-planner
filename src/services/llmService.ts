@@ -8,7 +8,7 @@ import type { LLMResponse, LLMServiceConfig } from '../types';
 
 const DEFAULT_CONFIG: LLMServiceConfig = {
   baseUrl: 'http://localhost:11434',
-  model: 'llama3.2',
+  model: 'AgentricAIcody:latest',
   timeout: 30000
 };
 

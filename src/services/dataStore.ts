@@ -33,7 +33,7 @@ export const backendDriver: BackendDriver = {
   repo: 'BAMmyers/AgentricAI-IED-ollama',
   status: 'connecting',
   lastPing: new Date().toISOString(),
-  model: 'llama3.2',
+  model: 'AgentricAIcody:latest',
   version: '1.0.0'
 };
 
@@ -251,6 +251,179 @@ export const hiveAgents: HiveAgent[] = [
 ];
 
 // =============================================================================
+// Default Curriculum Framework — production ready with all activity tiles
+// =============================================================================
+
+export const defaultCurriculum: CurriculumFramework = {
+  id: 'default-curriculum',
+  name: 'Default',
+  description: 'Standard daily learning schedule with balanced activities for holistic development',
+  goals: [
+    'Build foundational literacy skills',
+    'Develop number sense and math reasoning',
+    'Encourage creative expression',
+    'Support communication development',
+    'Promote motor skill development',
+    'Foster social-emotional growth'
+  ],
+  adaptationNotes: 'The Adapter Agent will personalize timing, difficulty, and content based on student engagement patterns.',
+  createdBy: 'System',
+  lastAdaptedBy: 'Curriculum Agent',
+  isActive: true
+};
+
+// =============================================================================
+// Default Schedule Tasks — pre-populated activities ready to use
+// =============================================================================
+
+export const defaultScheduleTasks: PlannerTask[] = [
+  {
+    id: 'task-0800-math',
+    name: 'Morning Math',
+    type: 'math',
+    icon: '📐',
+    time: '8:00 AM',
+    duration: 45,
+    status: 'pending',
+    engagement: 'unknown',
+    difficulty: 2,
+    content: {
+      title: 'Number Fun',
+      body: 'Let\'s practice counting and recognizing numbers! What number comes next: 1, 2, 3, __?',
+      instructions: 'Tap the correct answer or type it in.',
+      hint: 'Count on your fingers if you need help!'
+    },
+    agentSource: 'Curriculum'
+  },
+  {
+    id: 'task-0900-reading',
+    name: 'Story Time',
+    type: 'reading',
+    icon: '📖',
+    time: '9:00 AM',
+    duration: 30,
+    status: 'pending',
+    engagement: 'unknown',
+    difficulty: 2,
+    content: {
+      title: 'The Friendly Sun',
+      body: 'Once upon a time, there was a friendly sun who loved to shine. Every morning, the sun would wake up early and stretch its golden rays across the sky. "Good morning, world!" the sun would say. The flowers would open their petals, the birds would start to sing, and all the children would smile. The sun loved making everyone happy. Even on cloudy days, the sun would peek through and wave hello. The end.',
+      instructions: 'Listen to the story or read along. Tap "Read Aloud" to hear it spoken.',
+      hint: 'You can follow along with the words as they are read!'
+    },
+    agentSource: 'Curriculum'
+  },
+  {
+    id: 'task-1000-art',
+    name: 'Creative Art',
+    type: 'art',
+    icon: '🎨',
+    time: '10:00 AM',
+    duration: 30,
+    status: 'pending',
+    engagement: 'unknown',
+    difficulty: 1,
+    content: {
+      title: 'Draw Something Happy',
+      body: 'Use your finger to draw something that makes you happy! It could be a person, an animal, a place, or anything you love.',
+      instructions: 'Draw on the canvas below. Press Clear to start over.',
+      hint: 'There\'s no wrong way to make art. Express yourself!'
+    },
+    agentSource: 'Curriculum'
+  },
+  {
+    id: 'task-1030-movement',
+    name: 'Movement Break',
+    type: 'movement',
+    icon: '🏃',
+    time: '10:30 AM',
+    duration: 15,
+    status: 'pending',
+    engagement: 'unknown',
+    difficulty: 1,
+    content: {
+      title: 'Let\'s Move!',
+      body: 'Time to stretch and move your body! Try these: Touch your toes, reach for the sky, spin around slowly, jump 3 times, and give yourself a big hug!',
+      instructions: 'Follow along with the movements. Take your time!',
+      hint: 'Moving your body helps your brain learn better!'
+    },
+    agentSource: 'Orchestrator'
+  },
+  {
+    id: 'task-1100-writing',
+    name: 'Writing Practice',
+    type: 'writing',
+    icon: '✍️',
+    time: '11:00 AM',
+    duration: 30,
+    status: 'pending',
+    engagement: 'unknown',
+    difficulty: 2,
+    content: {
+      title: 'Letter Tracing',
+      body: 'Practice writing your letters! Start with the letter A. Trace it big, then try writing it on your own.',
+      instructions: 'Use the drawing pad to trace letters, or type in the text box.',
+      hint: 'Take your time. Good handwriting comes with practice!'
+    },
+    agentSource: 'Curriculum'
+  },
+  {
+    id: 'task-1200-break',
+    name: 'Lunch Break',
+    type: 'break',
+    icon: '🍎',
+    time: '12:00 PM',
+    duration: 45,
+    status: 'pending',
+    engagement: 'unknown',
+    difficulty: 1,
+    content: {
+      title: 'Lunch Time',
+      body: 'Time to eat and rest! Enjoy your meal, drink some water, and take a break. When you\'re ready, come back for more fun learning!',
+      instructions: 'Take your time eating. Mark complete when you\'re done.',
+      hint: 'A good lunch helps you learn better in the afternoon!'
+    },
+    agentSource: 'Orchestrator'
+  },
+  {
+    id: 'task-1300-communication',
+    name: 'Communication Time',
+    type: 'communication',
+    icon: '💬',
+    time: '1:00 PM',
+    duration: 30,
+    status: 'pending',
+    engagement: 'unknown',
+    difficulty: 2,
+    content: {
+      title: 'Express Yourself',
+      body: 'Let\'s practice communicating! How are you feeling right now? Happy 😊, Tired 😴, Excited 🎉, or Calm 😌? Point to or tap the one that matches how you feel.',
+      instructions: 'Use pictures, words, or sounds to share your thoughts.',
+      hint: 'There\'s no wrong answer. Your feelings are important!'
+    },
+    agentSource: 'Communicator'
+  },
+  {
+    id: 'task-1400-play',
+    name: 'Free Play',
+    type: 'play',
+    icon: '🎮',
+    time: '2:00 PM',
+    duration: 30,
+    status: 'pending',
+    engagement: 'unknown',
+    difficulty: 1,
+    content: {
+      title: 'Play Time!',
+      body: 'You\'ve worked hard today! This is your time to play however you want. You can listen to music, play with toys, or just relax.',
+      instructions: 'Choose what you want to do. This is YOUR time!',
+      hint: 'Play is important for learning too!'
+    },
+    agentSource: 'Orchestrator'
+  }
+];
+
+// =============================================================================
 // Data Store Class — manages all application state and persistence
 // =============================================================================
 
@@ -267,7 +440,21 @@ class DataStore {
 
     await database.init();
     await this.checkBackendConnection();
+    
+    // Ensure default curriculum exists
+    await this.ensureDefaultCurriculum();
+    
     this._initialized = true;
+  }
+
+  // Ensure default curriculum and schedule exist
+  private async ensureDefaultCurriculum(): Promise<void> {
+    const frameworks = await this.getFrameworks();
+    const hasDefault = frameworks.some(f => f.id === 'default-curriculum');
+    
+    if (!hasDefault) {
+      await this.saveFramework(defaultCurriculum);
+    }
   }
 
   async checkBackendConnection(): Promise<boolean> {
@@ -325,6 +512,13 @@ class DataStore {
 
   async getSchedule(): Promise<PlannerTask[]> {
     const tasks = await database.getAll<PlannerTask>('sessions');
+    
+    // If no tasks in DB, load the default schedule
+    if (tasks.length === 0) {
+      await this.saveSchedule(defaultScheduleTasks);
+      return [...defaultScheduleTasks];
+    }
+    
     return tasks.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
   }
 
@@ -339,6 +533,11 @@ class DataStore {
     const tasks = await this.getSchedule();
     const updated = tasks.map(t => t.id === taskId ? { ...t, ...updates } : t);
     await this.saveSchedule(updated);
+  }
+
+  async resetToDefaultSchedule(): Promise<PlannerTask[]> {
+    await this.saveSchedule(defaultScheduleTasks);
+    return [...defaultScheduleTasks];
   }
 
   async generateSchedule(profile: StudentProfile): Promise<PlannerTask[]> {
@@ -380,12 +579,12 @@ Generate 6-8 age-appropriate activities. Return ONLY valid JSON, no markdown.`;
           return tasks;
         }
       } catch (err) {
-        console.error('Schedule generation failed, backend may need configuration:', err);
+        console.error('AI schedule generation not available, using default schedule:', err);
       }
     }
 
-    // No schedule available — return empty (UI will show onboarding)
-    return [];
+    // Use default schedule
+    return this.resetToDefaultSchedule();
   }
 
   // -------------------------------------------------------------------------

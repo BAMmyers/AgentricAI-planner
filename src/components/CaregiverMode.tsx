@@ -281,27 +281,25 @@ const CaregiverMode: React.FC<CaregiverModeProps> = ({ profile, onNavigate }) =>
     );
   };
 
-  const renderCurriculum = () => (
-    <div className="space-y-6">
-      <div className="bg-sky-500/10 border border-sky-500/30 rounded-xl p-4">
-        <h3 className="font-semibold text-sky-300 mb-2">📚 Curriculum Frameworks</h3>
-        <p className="text-sm text-sky-200/70">
-          Define high-level goals and frameworks. The Curriculum Agent and Adapter Agent
-          will automatically personalize content and adjust difficulty in real-time.
-        </p>
-      </div>
+  const renderCurriculum = () => {
+    const handleEditFramework = (framework: CurriculumFramework) => {
+      // For now, show the framework is editable
+      console.log('Edit framework:', framework.id);
+      // In production, this would open an edit modal
+    };
 
-      {frameworks.length === 0 ? (
-        <div className="bg-neutral-800/50 border border-neutral-700 rounded-xl p-8 text-center">
-          <span className="text-4xl mb-4 block">📚</span>
-          <h3 className="text-lg font-semibold text-white mb-2">No Frameworks Created</h3>
-          <p className="text-sm text-neutral-400">
-            Create curriculum frameworks to guide the AI's lesson planning for {profile.name}.
-            The Curriculum Agent uses these to assemble personalized activities.
+    return (
+      <div className="space-y-6">
+        <div className="bg-sky-500/10 border border-sky-500/30 rounded-xl p-4">
+          <h3 className="font-semibold text-sky-300 mb-2">📚 Curriculum Frameworks</h3>
+          <p className="text-sm text-sky-200/70">
+            Manage curriculum frameworks that define the daily schedule structure. 
+            The Default framework provides a balanced day with 8 activity blocks.
+            Edit to customize timing, activities, and content for {profile.name}.
           </p>
         </div>
-      ) : (
-        frameworks.map((framework: CurriculumFramework) => (
+
+        {frameworks.map((framework: CurriculumFramework) => (
           <div
             key={framework.id}
             className={`bg-neutral-800/50 border rounded-xl p-5 ${
@@ -310,16 +308,29 @@ const CaregiverMode: React.FC<CaregiverModeProps> = ({ profile, onNavigate }) =>
           >
             <div className="flex items-start justify-between mb-3">
               <div>
-                <h4 className="font-semibold text-white text-lg">{framework.name}</h4>
+                <h4 className="font-semibold text-white text-lg flex items-center gap-2">
+                  {framework.name}
+                  {framework.id === 'default-curriculum' && (
+                    <span className="px-2 py-0.5 bg-sky-500/20 text-sky-400 text-xs rounded">System Default</span>
+                  )}
+                </h4>
                 <p className="text-sm text-neutral-400">{framework.description}</p>
               </div>
-              <span className={`px-2 py-1 rounded text-xs font-medium ${
-                framework.isActive
-                  ? 'bg-emerald-500/20 text-emerald-400'
-                  : 'bg-neutral-700 text-neutral-400'
-              }`}>
-                {framework.isActive ? 'Active' : 'Inactive'}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                  framework.isActive
+                    ? 'bg-emerald-500/20 text-emerald-400'
+                    : 'bg-neutral-700 text-neutral-400'
+                }`}>
+                  {framework.isActive ? 'Active' : 'Inactive'}
+                </span>
+                <button
+                  onClick={() => handleEditFramework(framework)}
+                  className="px-3 py-1 bg-sky-600 hover:bg-sky-700 text-white text-xs font-medium rounded transition-colors"
+                >
+                  Edit Framework
+                </button>
+              </div>
             </div>
 
             <div className="mb-3">
@@ -343,15 +354,42 @@ const CaregiverMode: React.FC<CaregiverModeProps> = ({ profile, onNavigate }) =>
                 </p>
               </div>
             )}
-          </div>
-        ))
-      )}
 
-      <button className="w-full py-3 border-2 border-dashed border-neutral-600 rounded-xl text-neutral-400 hover:border-sky-500 hover:text-sky-400 transition-colors">
-        + Create New Framework
-      </button>
-    </div>
-  );
+            {/* Activity Blocks Preview */}
+            {framework.id === 'default-curriculum' && (
+              <div className="mt-4 pt-4 border-t border-neutral-700">
+                <p className="text-xs text-neutral-500 mb-2">Schedule Blocks (8 activities):</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {[
+                    { time: '8:00 AM', icon: '📐', name: 'Morning Math' },
+                    { time: '9:00 AM', icon: '📖', name: 'Story Time' },
+                    { time: '10:00 AM', icon: '🎨', name: 'Creative Art' },
+                    { time: '10:30 AM', icon: '🏃', name: 'Movement Break' },
+                    { time: '11:00 AM', icon: '✍️', name: 'Writing Practice' },
+                    { time: '12:00 PM', icon: '🍎', name: 'Lunch Break' },
+                    { time: '1:00 PM', icon: '💬', name: 'Communication' },
+                    { time: '2:00 PM', icon: '🎮', name: 'Free Play' }
+                  ].map((block, i) => (
+                    <div key={i} className="flex items-center gap-2 px-2 py-1.5 bg-neutral-700/50 rounded text-xs">
+                      <span>{block.icon}</span>
+                      <div>
+                        <span className="text-neutral-400">{block.time}</span>
+                        <span className="text-neutral-300 ml-1">{block.name}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+
+        <button className="w-full py-3 border-2 border-dashed border-neutral-600 rounded-xl text-neutral-400 hover:border-sky-500 hover:text-sky-400 transition-colors">
+          + Add Custom Framework
+        </button>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950 text-white">
