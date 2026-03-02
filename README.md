@@ -40,6 +40,20 @@
 - [Contributing](#contributing)
 - [License](#license)
 
+## 📚 Detailed Documentation
+
+For in-depth specifications beyond this README, see the `docs/` directory:
+
+| Document | Description |
+|----------|-------------|
+| [**docs/ARCHITECTURE.md**](docs/ARCHITECTURE.md) | Full system architecture — component dependency graph, data flow patterns, IndexedDB schema, security model |
+| [**docs/AGENT_HIVE.md**](docs/AGENT_HIVE.md) | Complete agent hive specification — state machine, all 6 agent specs with I/O tables, simultaneous execution model, IED-ollama integration per agent |
+| [**docs/PRIVACY.md**](docs/PRIVACY.md) | Privacy architecture deep dive — Guardian enforcement, data classification, network boundary, compliance alignment (COPPA, FERPA, GDPR, HIPAA) |
+| [**docs/DEPLOYMENT.md**](docs/DEPLOYMENT.md) | Deployment guide — build process, PWA installation on iPad/Galaxy Tab, AgentricAI-IED-ollama backend setup, GPU acceleration, troubleshooting |
+| [**docs/API_REFERENCE.md**](docs/API_REFERENCE.md) | Complete API reference — LLM Service, Database Service, Data Store method signatures with parameters, return types, and usage examples |
+| [**docs/CONTRIBUTING.md**](docs/CONTRIBUTING.md) | Contribution guidelines — non-negotiable constraints, code standards, PR checklist |
+| [**CHANGELOG.md**](CHANGELOG.md) | Version history and release notes |
+
 ---
 
 ## The Vision
@@ -107,7 +121,7 @@ The pushing force behind this creation is a deep-seated need to bridge the gap f
                                     │   (localhost:11434)   │
                                     │                       │
                                     │  Local LLM Inference  │
-                                    │  llama3.2 / custom    │
+                                    │  AgentricAIcody:latest│
                                     └───────────────────────┘
 ```
 
@@ -325,7 +339,7 @@ All AI intelligence is powered by **[AgentricAI-IED-ollama](https://github.com/B
 | Parameter | Value |
 |-----------|-------|
 | Endpoint | `http://localhost:11434` |
-| Default Model | `llama3.2` |
+| Default Model | `AgentricAIcody:latest` |
 | Timeout | `30000ms` |
 | Protocol | Ollama REST API |
 
@@ -379,10 +393,21 @@ When AgentricAI-IED-ollama is not running:
 
 ```
 AgentricAI-planner/
+├── .ollama/                            # AgentricAIcody:latest model (local LLM)
 ├── index.html                          # PWA entry point (AAC meta tags)
 ├── package.json                        # Dependencies and scripts
 ├── tsconfig.json                       # TypeScript configuration
 ├── vite.config.ts                      # Vite + Tailwind + SingleFile plugin
+├── README.md                           # This file
+├── CHANGELOG.md                        # Version history and release notes
+│
+├── docs/
+│   ├── ARCHITECTURE.md                 # System architecture, data flow, security model
+│   ├── AGENT_HIVE.md                   # Complete agent hive specification
+│   ├── PRIVACY.md                      # Privacy architecture deep dive
+│   ├── DEPLOYMENT.md                   # Deployment guide for AAC devices
+│   ├── API_REFERENCE.md                # Complete service API reference
+│   └── CONTRIBUTING.md                 # Contribution guidelines and constraints
 │
 ├── src/
 │   ├── main.tsx                        # React DOM entry point
@@ -406,8 +431,6 @@ AgentricAI-planner/
 │   │
 │   └── utils/
 │       └── cn.ts                       # clsx + tailwind-merge utility
-│
-└── README.md                           # This file
 ```
 
 ### File Descriptions
@@ -462,7 +485,9 @@ npm install
 
 # Start the backend (in a separate terminal)
 # See: https://github.com/BAMmyers/AgentricAI-IED-ollama
-# Ensure Ollama is running with a model (e.g., llama3.2)
+# The AgentricAIcody:latest model is included in the .ollama/ directory
+ollama serve
+# The model loads automatically from .ollama/
 
 # Start the development server
 npm run dev
@@ -498,7 +523,7 @@ The LLM service connects to AgentricAI-IED-ollama. Configuration is defined in `
 ```typescript
 const DEFAULT_CONFIG: LLMServiceConfig = {
   baseUrl: 'http://localhost:11434',  // Ollama endpoint
-  model: 'llama3.2',                  // Default model
+  model: 'AgentricAIcody:latest',     // Default model (included in .ollama/)
   timeout: 30000                       // 30 second timeout
 };
 ```
@@ -506,7 +531,7 @@ const DEFAULT_CONFIG: LLMServiceConfig = {
 To change the model at runtime:
 ```typescript
 import { llmService } from './services/llmService';
-llmService.setModel('mistral');
+llmService.setModel('AgentricAIcody:latest');
 ```
 
 ### Custom Theme
@@ -727,7 +752,7 @@ This project exists to serve children with unique learning needs. Contributions 
 
 ## License
 
-This project is part of [AgentricAI Studios](https://github.com/BAMmyers/AgentricAI_Studios) by [@BAMmyers](https://github.com/BAMmyers).
+This project is part of [AgentricAI](https://github.com/BAMmyers/AgentricAI) by [@BAMmyers](https://github.com/BAMmyers).
 
 ---
 
