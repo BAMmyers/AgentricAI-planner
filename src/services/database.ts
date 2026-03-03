@@ -5,7 +5,7 @@
 // =============================================================================
 
 const DB_NAME = 'agentricai-planner';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 interface DBSchema {
   profiles: { key: string; value: Record<string, unknown> };
@@ -14,6 +14,8 @@ interface DBSchema {
   curriculum: { key: string; value: Record<string, unknown> };
   insights: { key: string; value: Record<string, unknown> };
   metrics: { key: string; value: Record<string, unknown> };
+  directives: { key: string; value: Record<string, unknown> };
+  progression: { key: string; value: Record<string, unknown> };
 }
 
 type StoreName = keyof DBSchema;
@@ -34,7 +36,8 @@ class DatabaseService {
 
         const stores: StoreName[] = [
           'profiles', 'sessions', 'interactions',
-          'curriculum', 'insights', 'metrics'
+          'curriculum', 'insights', 'metrics',
+          'directives', 'progression'
         ];
 
         stores.forEach((storeName) => {

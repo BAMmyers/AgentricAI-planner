@@ -1,6 +1,6 @@
 // =============================================================================
 // Caregiver Studio Mode - AgentricAI-planner
-// AI-generated progress reports and curriculum management
+// AI-generated progress reports, curriculum management, admin directives
 // Privacy enforced — NO raw student data shown
 // Backend: AgentricAI-IED-ollama
 // =============================================================================
@@ -15,10 +15,42 @@ import type {
   SkillProgress,
   AIInsight,
   InsightType,
-  CurriculumFramework
+  CurriculumFramework,
+  TaskType,
+  AdminDirective
 } from '../types';
-import { dataStore } from '../services/dataStore';
+import { dataStore, defaultScheduleTasks } from '../services/dataStore';
 import AgentHive from './AgentHive';
+
+// Schedule block for editing
+interface ScheduleBlock {
+  id: string;
+  time: string;
+  endTime: string;
+  name: string;
+  type: TaskType;
+  icon: string;
+  difficulty: number;
+  detail: string;
+}
+
+// Convert default tasks to schedule blocks
+function tasksToBlocks(): ScheduleBlock[] {
+  return defaultScheduleTasks.map((task, idx) => {
+    const startHour = 8 + idx;
+    const endHour = startHour + 1;
+    return {
+      id: task.id,
+      time: `${startHour.toString().padStart(2, '0')}:00`,
+      endTime: `${endHour.toString().padStart(2, '0')}:00`,
+      name: task.name,
+      type: task.type,
+      icon: task.icon,
+      difficulty: task.difficulty,
+      detail: task.content?.body || ''
+    };
+  });
+}
 
 interface CaregiverModeProps {
   profile: StudentProfile;
@@ -39,6 +71,18 @@ const CaregiverMode: React.FC<CaregiverModeProps> = ({ profile, onNavigate }) =>
   const [frameworks, setFrameworks] = useState<CurriculumFramework[]>([]);
   const [interactionCount, setInteractionCount] = useState(0);
 
+  // Directive state
+  const [directiveText, setDirectiveText] = useState('');
+  const [directives, setDirectives] = useState<AdminDirective[]>([]);
+  const [isProcessingDirective, setIsProcessingDirective] = useState(false);
+
+  // Editing state
+  const [editingFramework, setEditingFramework] = useState<CurriculumFramework | null>(null);
+  const [editBlocks, setEditBlocks] = useState<ScheduleBlock[]>([]);
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
+  const [newFrameworkName, setNewFrameworkName] = useState('');
+  const [newFrameworkDesc, setNewFrameworkDesc] = useState('');
+
   // Load data
   useEffect(() => {
     const loadData = async () => {
@@ -57,6 +101,9 @@ const CaregiverMode: React.FC<CaregiverModeProps> = ({ profile, onNavigate }) =>
 
         const count = await dataStore.getInteractionCount();
         setInteractionCount(count);
+
+        const dirs = await dataStore.getDirectives();
+        setDirectives(dirs);
       } catch (err) {
         console.error('Failed to load caregiver data:', err);
       }
@@ -64,6 +111,37 @@ const CaregiverMode: React.FC<CaregiverModeProps> = ({ profile, onNavigate }) =>
     };
     loadData();
   }, []);
+
+  // Process directive
+  const handleSubmitDirective = async () => {
+    if (!directiveText.trim() || isProcessingDirective) return;
+
+    setIsProcessingDirective(true);
+    try {
+      const result = await dataStore.processDirective(directiveText.trim(), profile);
+      setDirectives(prev => [result, ...prev]);
+      setDirectiveText('');
+    } catch (err) {
+      console.error('Directive processing failed:', err);
+      const errorDirective: AdminDirective = {
+        id: `dir-error-${Date.now()}`,
+        text: directiveText.trim(),
+        timestamp: new Date().toISOString(),
+        status: 'error',
+        errorMessage: 'Failed to process directive. Check backend connection.',
+        processedBy: 'System'
+      };
+      setDirectives(prev => [errorDirective, ...prev]);
+    }
+    setIsProcessingDirective(false);
+  };
+
+  const handleDirectiveKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmitDirective();
+    }
+  };
 
   // Generate fresh insights
   const handleGenerateInsights = async () => {
@@ -80,8 +158,100 @@ const CaregiverMode: React.FC<CaregiverModeProps> = ({ profile, onNavigate }) =>
     { id: 'hive', label: 'Agent Hive', icon: '🐝' }
   ];
 
+  const renderDirectiveBox = () => (
+    <div className="bg-gradient-to-r from-indigo-900/40 to-purple-900/40 border border-indigo-500/40 rounded-xl p-5 mb-6">
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-xl">📋</span>
+        <h3 className="font-bold text-indigo-300">Administrative Directive</h3>
+        <span className="text-xs px-2 py-0.5 bg-indigo-500/20 border border-indigo-500/30 rounded-full text-indigo-400">
+          AI-Processed
+        </span>
+      </div>
+      <p className="text-sm text-indigo-200/60 mb-4">
+        Type a directive to adjust {profile.name}'s curriculum. The AI will interpret and apply changes automatically.
+        Examples: "make math problems harder", "focus more on reading", "add a creative activity"
+      </p>
+
+      <div className="flex gap-3">
+        <div className="flex-1 relative">
+          <input
+            type="text"
+            value={directiveText}
+            onChange={(e) => setDirectiveText(e.target.value)}
+            onKeyDown={handleDirectiveKeyDown}
+            disabled={isProcessingDirective}
+            placeholder='e.g., "Make math problems a bit harder" or "Add more communication practice"'
+            className="w-full px-4 py-3 bg-neutral-900/80 border border-indigo-500/30 rounded-lg text-white placeholder-neutral-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition disabled:opacity-50"
+          />
+          {isProcessingDirective && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <div className="animate-spin rounded-full h-5 w-5 border-2 border-indigo-400 border-t-transparent" />
+            </div>
+          )}
+        </div>
+        <button
+          onClick={handleSubmitDirective}
+          disabled={!directiveText.trim() || isProcessingDirective}
+          className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-neutral-700 disabled:text-neutral-500 text-white font-bold rounded-lg transition-colors whitespace-nowrap"
+        >
+          {isProcessingDirective ? 'Processing...' : 'Apply →'}
+        </button>
+      </div>
+
+      {/* Directive History */}
+      {directives.length > 0 && (
+        <div className="mt-4 space-y-2">
+          <h4 className="text-xs font-semibold text-indigo-300/60 uppercase tracking-wider">Recent Directives</h4>
+          {directives.slice(0, 5).map((dir) => (
+            <div
+              key={dir.id}
+              className={`flex items-start gap-3 p-3 rounded-lg text-sm ${
+                dir.status === 'applied'
+                  ? 'bg-emerald-500/10 border border-emerald-500/20'
+                  : dir.status === 'error'
+                  ? 'bg-red-500/10 border border-red-500/20'
+                  : dir.status === 'processing'
+                  ? 'bg-amber-500/10 border border-amber-500/20'
+                  : 'bg-neutral-800/50 border border-neutral-700'
+              }`}
+            >
+              <span className="text-lg mt-0.5">
+                {dir.status === 'applied' ? '✅' : dir.status === 'error' ? '❌' : dir.status === 'processing' ? '⏳' : '📝'}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-white font-medium truncate">"{dir.text}"</p>
+                {dir.appliedChanges && (
+                  <p className="text-emerald-300/80 text-xs mt-1">{dir.appliedChanges}</p>
+                )}
+                {dir.errorMessage && (
+                  <p className="text-red-300/80 text-xs mt-1">{dir.errorMessage}</p>
+                )}
+                <p className="text-neutral-500 text-xs mt-1">
+                  {new Date(dir.timestamp).toLocaleString()} • via {dir.processedBy} Agent
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-3 bg-indigo-500/5 border border-indigo-500/15 rounded-lg p-2">
+        <p className="text-xs text-indigo-300/50 flex items-center gap-2">
+          <span>⚡</span>
+          <span>
+            Directives are processed by the Orchestrator Agent via AgentricAI-IED-ollama.
+            The curriculum evolves automatically — you don't need to rewrite the entire framework.
+          </span>
+        </p>
+      </div>
+    </div>
+  );
+
   const renderOverview = () => (
     <div className="space-y-8">
+      {/* Admin Directive Box — TOP OF OVERVIEW */}
+      {renderDirectiveBox()}
+
       {/* Student summary */}
       <div className="bg-neutral-800/50 border border-neutral-700 rounded-xl p-6">
         <div className="flex items-center gap-4 mb-4">
@@ -281,22 +451,383 @@ const CaregiverMode: React.FC<CaregiverModeProps> = ({ profile, onNavigate }) =>
     );
   };
 
-  const renderCurriculum = () => {
-    const handleEditFramework = (framework: CurriculumFramework) => {
-      // For now, show the framework is editable
-      console.log('Edit framework:', framework.id);
-      // In production, this would open an edit modal
+  // Type options for activity selection
+  const activityTypes: { type: TaskType; icon: string; label: string }[] = [
+    { type: 'math', icon: '📐', label: 'Math' },
+    { type: 'reading', icon: '📖', label: 'Reading' },
+    { type: 'art', icon: '🎨', label: 'Art' },
+    { type: 'writing', icon: '✍️', label: 'Writing' },
+    { type: 'movement', icon: '🏃', label: 'Movement' },
+    { type: 'break', icon: '🍎', label: 'Break' },
+    { type: 'communication', icon: '💬', label: 'Communication' },
+    { type: 'play', icon: '🎮', label: 'Play' },
+    { type: 'social_studies', icon: '🌍', label: 'Social Studies' },
+    { type: 'creative', icon: '✨', label: 'Creative' }
+  ];
+
+  const handleEditFramework = (framework: CurriculumFramework) => {
+    setEditingFramework(framework);
+    setEditBlocks(tasksToBlocks());
+  };
+
+  const handleCloseEdit = () => {
+    setEditingFramework(null);
+    setEditBlocks([]);
+    setIsCreatingNew(false);
+    setNewFrameworkName('');
+    setNewFrameworkDesc('');
+  };
+
+  const handleSaveFramework = async () => {
+    if (editingFramework) {
+      const updated: CurriculumFramework = {
+        ...editingFramework,
+        lastAdaptedBy: 'Caregiver'
+      };
+      await dataStore.saveFramework(updated);
+
+      const updatedTasks = editBlocks.map((block, idx) => ({
+        id: block.id || `task-${Date.now()}-${idx}`,
+        name: block.name,
+        type: block.type,
+        icon: block.icon,
+        time: formatTime12h(block.time),
+        duration: 30,
+        status: 'pending' as const,
+        engagement: 'unknown' as const,
+        difficulty: block.difficulty,
+        content: {
+          title: block.name,
+          body: block.detail,
+          instructions: '',
+          hint: ''
+        },
+        agentSource: 'Caregiver'
+      }));
+      await dataStore.saveSchedule(updatedTasks);
+
+      const fw = await dataStore.getFrameworks();
+      setFrameworks(fw);
+    }
+    handleCloseEdit();
+  };
+
+  const handleCreateFramework = async () => {
+    if (!newFrameworkName.trim()) return;
+
+    const newFramework: CurriculumFramework = {
+      id: `framework-${Date.now()}`,
+      name: newFrameworkName.trim(),
+      description: newFrameworkDesc.trim() || 'Custom curriculum framework',
+      goals: ['Personalized learning'],
+      adaptationNotes: 'Created by caregiver. AI adaptation will begin after first use.',
+      createdBy: 'Caregiver',
+      lastAdaptedBy: 'Caregiver',
+      isActive: false
     };
 
+    await dataStore.saveFramework(newFramework);
+    const fw = await dataStore.getFrameworks();
+    setFrameworks(fw);
+    handleCloseEdit();
+  };
+
+  const handleMoveBlockUp = (index: number) => {
+    if (index === 0) return;
+    const newBlocks = [...editBlocks];
+    [newBlocks[index - 1], newBlocks[index]] = [newBlocks[index], newBlocks[index - 1]];
+    recalculateTimes(newBlocks);
+    setEditBlocks(newBlocks);
+  };
+
+  const handleMoveBlockDown = (index: number) => {
+    if (index === editBlocks.length - 1) return;
+    const newBlocks = [...editBlocks];
+    [newBlocks[index], newBlocks[index + 1]] = [newBlocks[index + 1], newBlocks[index]];
+    recalculateTimes(newBlocks);
+    setEditBlocks(newBlocks);
+  };
+
+  const handleRemoveBlock = (index: number) => {
+    const newBlocks = editBlocks.filter((_, i) => i !== index);
+    recalculateTimes(newBlocks);
+    setEditBlocks(newBlocks);
+  };
+
+  const handleAddBlock = () => {
+    const lastBlock = editBlocks[editBlocks.length - 1];
+    const newTime = lastBlock ? addHour(lastBlock.time) : '08:00';
+    const newBlock: ScheduleBlock = {
+      id: `block-${Date.now()}`,
+      time: newTime,
+      endTime: addHour(newTime),
+      name: 'New Activity',
+      type: 'creative',
+      icon: '✨',
+      difficulty: 2,
+      detail: ''
+    };
+    setEditBlocks([...editBlocks, newBlock]);
+  };
+
+  const handleBlockChange = (index: number, field: keyof ScheduleBlock, value: string | number) => {
+    const newBlocks = [...editBlocks];
+    const block = newBlocks[index];
+
+    if (field === 'type') {
+      const typeInfo = activityTypes.find(t => t.type === value);
+      if (typeInfo) {
+        newBlocks[index] = { ...block, type: value as TaskType, icon: typeInfo.icon };
+      }
+    } else if (field === 'name') {
+      newBlocks[index] = { ...block, name: value as string };
+    } else if (field === 'detail') {
+      newBlocks[index] = { ...block, detail: value as string };
+    } else if (field === 'difficulty') {
+      newBlocks[index] = { ...block, difficulty: value as number };
+    } else if (field === 'time') {
+      newBlocks[index] = { ...block, time: value as string };
+    } else if (field === 'endTime') {
+      newBlocks[index] = { ...block, endTime: value as string };
+    } else if (field === 'icon') {
+      newBlocks[index] = { ...block, icon: value as string };
+    }
+
+    setEditBlocks(newBlocks);
+  };
+
+  const recalculateTimes = (blocks: ScheduleBlock[]) => {
+    let currentHour = 8;
+    blocks.forEach((block) => {
+      block.time = `${currentHour.toString().padStart(2, '0')}:00`;
+      block.endTime = `${(currentHour + 1).toString().padStart(2, '0')}:00`;
+      currentHour++;
+    });
+  };
+
+  const addHour = (time: string): string => {
+    const hour = parseInt(time.split(':')[0]) + 1;
+    return `${hour.toString().padStart(2, '0')}:00`;
+  };
+
+  const formatTime12h = (time24: string): string => {
+    const hour = parseInt(time24.split(':')[0]);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour % 12 || 12;
+    return `${hour12}:00 ${ampm}`;
+  };
+
+  const renderCurriculum = () => {
+    // Edit Framework Modal
+    if (editingFramework) {
+      return (
+        <div className="space-y-6">
+          <div className="bg-sky-500/10 border border-sky-500/30 rounded-xl p-4 flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-sky-300 mb-1">✏️ Editing: {editingFramework.name}</h3>
+              <p className="text-sm text-sky-200/70">
+                Reorder activities using arrows. Edit times, types, and add custom details.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleCloseEdit}
+                className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveFramework}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+
+          {/* Schedule Blocks Editor */}
+          <div className="space-y-3">
+            {editBlocks.map((block, index) => (
+              <div
+                key={block.id}
+                className="bg-neutral-800/50 border border-neutral-700 rounded-xl p-4"
+              >
+                <div className="flex items-start gap-4">
+                  {/* Reorder buttons */}
+                  <div className="flex flex-col gap-1">
+                    <button
+                      onClick={() => handleMoveBlockUp(index)}
+                      disabled={index === 0}
+                      className="p-1 bg-neutral-700 hover:bg-neutral-600 disabled:opacity-30 disabled:cursor-not-allowed rounded text-xs"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      onClick={() => handleMoveBlockDown(index)}
+                      disabled={index === editBlocks.length - 1}
+                      className="p-1 bg-neutral-700 hover:bg-neutral-600 disabled:opacity-30 disabled:cursor-not-allowed rounded text-xs"
+                    >
+                      ↓
+                    </button>
+                  </div>
+
+                  {/* Time display */}
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-sky-400">{formatTime12h(block.time)}</div>
+                    <div className="text-xs text-neutral-500">to {formatTime12h(block.endTime)}</div>
+                  </div>
+
+                  {/* Icon */}
+                  <div className="text-4xl">{block.icon}</div>
+
+                  {/* Editable fields */}
+                  <div className="flex-1 space-y-3">
+                    <div className="flex gap-3">
+                      <input
+                        type="text"
+                        value={block.name}
+                        onChange={(e) => handleBlockChange(index, 'name', e.target.value)}
+                        className="flex-1 px-3 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-white text-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                        placeholder="Activity name"
+                      />
+                      <select
+                        value={block.type}
+                        onChange={(e) => handleBlockChange(index, 'type', e.target.value)}
+                        className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-white text-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                      >
+                        {activityTypes.map((at) => (
+                          <option key={at.type} value={at.type}>
+                            {at.icon} {at.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex gap-3 items-center">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-neutral-400">Difficulty:</span>
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            onClick={() => handleBlockChange(index, 'difficulty', star)}
+                            className={`text-lg ${star <= block.difficulty ? 'text-yellow-400' : 'text-neutral-600'}`}
+                          >
+                            ★
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <textarea
+                      value={block.detail}
+                      onChange={(e) => handleBlockChange(index, 'detail', e.target.value)}
+                      className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-white text-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 resize-none"
+                      rows={2}
+                      placeholder="Add custom detail or instructions for this activity..."
+                    />
+                  </div>
+
+                  {/* Remove button */}
+                  <button
+                    onClick={() => handleRemoveBlock(index)}
+                    className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
+                    title="Remove block"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Add Block Button */}
+          <button
+            onClick={handleAddBlock}
+            className="w-full py-3 border-2 border-dashed border-sky-600 rounded-xl text-sky-400 hover:bg-sky-500/10 transition-colors"
+          >
+            + Add Activity Block
+          </button>
+        </div>
+      );
+    }
+
+    // Create New Framework Modal
+    if (isCreatingNew) {
+      return (
+        <div className="space-y-6">
+          <div className="bg-sky-500/10 border border-sky-500/30 rounded-xl p-4">
+            <h3 className="font-semibold text-sky-300 mb-2">📚 Create New Framework</h3>
+            <p className="text-sm text-sky-200/70">
+              Create a custom curriculum framework for {profile.name}. You can edit the schedule blocks after creation.
+            </p>
+          </div>
+
+          <div className="bg-neutral-800/50 border border-neutral-700 rounded-xl p-6 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-neutral-300 mb-2">Framework Name</label>
+              <input
+                type="text"
+                value={newFrameworkName}
+                onChange={(e) => setNewFrameworkName(e.target.value)}
+                className="w-full px-4 py-3 bg-neutral-900 border border-neutral-600 rounded-lg text-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                placeholder="e.g., Morning Focus Schedule"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-300 mb-2">Description</label>
+              <textarea
+                value={newFrameworkDesc}
+                onChange={(e) => setNewFrameworkDesc(e.target.value)}
+                className="w-full px-4 py-3 bg-neutral-900 border border-neutral-600 rounded-lg text-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 resize-none"
+                rows={3}
+                placeholder="Describe the purpose of this framework..."
+              />
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <button
+                onClick={handleCloseEdit}
+                className="flex-1 py-3 bg-neutral-700 hover:bg-neutral-600 text-white font-medium rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateFramework}
+                disabled={!newFrameworkName.trim()}
+                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-neutral-700 disabled:text-neutral-500 text-white font-medium rounded-lg transition-colors"
+              >
+                Create Framework
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Main Curriculum View
     return (
       <div className="space-y-6">
         <div className="bg-sky-500/10 border border-sky-500/30 rounded-xl p-4">
           <h3 className="font-semibold text-sky-300 mb-2">📚 Curriculum Frameworks</h3>
           <p className="text-sm text-sky-200/70">
-            Manage curriculum frameworks that define the daily schedule structure. 
+            Manage curriculum frameworks that define the daily schedule structure.
             The Default framework provides a balanced day with 8 activity blocks.
             Edit to customize timing, activities, and content for {profile.name}.
           </p>
+        </div>
+
+        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <span className="text-xl">⚡</span>
+            <div>
+              <h4 className="font-semibold text-emerald-300 text-sm">Auto-Evolving Curriculum</h4>
+              <p className="text-xs text-emerald-200/60 mt-1">
+                You don't need to rewrite the entire framework every time. The curriculum evolves automatically
+                as {profile.name} completes activities. Use the Admin Directive box on the Overview tab
+                to give high-level instructions like "make math harder" — the AI handles the rest.
+              </p>
+            </div>
+          </div>
         </div>
 
         {frameworks.map((framework: CurriculumFramework) => (
@@ -360,21 +891,12 @@ const CaregiverMode: React.FC<CaregiverModeProps> = ({ profile, onNavigate }) =>
               <div className="mt-4 pt-4 border-t border-neutral-700">
                 <p className="text-xs text-neutral-500 mb-2">Schedule Blocks (8 activities):</p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  {[
-                    { time: '8:00 AM', icon: '📐', name: 'Morning Math' },
-                    { time: '9:00 AM', icon: '📖', name: 'Story Time' },
-                    { time: '10:00 AM', icon: '🎨', name: 'Creative Art' },
-                    { time: '10:30 AM', icon: '🏃', name: 'Movement Break' },
-                    { time: '11:00 AM', icon: '✍️', name: 'Writing Practice' },
-                    { time: '12:00 PM', icon: '🍎', name: 'Lunch Break' },
-                    { time: '1:00 PM', icon: '💬', name: 'Communication' },
-                    { time: '2:00 PM', icon: '🎮', name: 'Free Play' }
-                  ].map((block, i) => (
+                  {defaultScheduleTasks.map((task, i) => (
                     <div key={i} className="flex items-center gap-2 px-2 py-1.5 bg-neutral-700/50 rounded text-xs">
-                      <span>{block.icon}</span>
+                      <span>{task.icon}</span>
                       <div>
-                        <span className="text-neutral-400">{block.time}</span>
-                        <span className="text-neutral-300 ml-1">{block.name}</span>
+                        <span className="text-neutral-400">{task.time}</span>
+                        <span className="text-neutral-300 ml-1">{task.name}</span>
                       </div>
                     </div>
                   ))}
@@ -384,7 +906,10 @@ const CaregiverMode: React.FC<CaregiverModeProps> = ({ profile, onNavigate }) =>
           </div>
         ))}
 
-        <button className="w-full py-3 border-2 border-dashed border-neutral-600 rounded-xl text-neutral-400 hover:border-sky-500 hover:text-sky-400 transition-colors">
+        <button
+          onClick={() => setIsCreatingNew(true)}
+          className="w-full py-3 border-2 border-dashed border-neutral-600 rounded-xl text-neutral-400 hover:border-sky-500 hover:text-sky-400 transition-colors"
+        >
           + Add Custom Framework
         </button>
       </div>

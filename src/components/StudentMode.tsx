@@ -31,12 +31,21 @@ export default function StudentMode({ profile, onBack }: StudentModeProps) {
     hiveAgentDefs.map(a => ({ ...a }))
   );
 
-  // Load schedule on mount — always has default if nothing else
+  // Load schedule on mount — apply any evolved content from previous session
   useEffect(() => {
     const load = async () => {
       setIsLoading(true);
       const schedule = await dataStore.getSchedule();
-      setTasks(schedule);
+      // Apply evolved content from previous session (content evolution takes effect here)
+      const evolvedSchedule = await dataStore.applyEvolvedContent(schedule);
+      // If content was evolved, persist the updated schedule
+      const hasEvolved = evolvedSchedule.some((t, i) =>
+        t.content?.body !== schedule[i]?.content?.body || t.difficulty !== schedule[i]?.difficulty
+      );
+      if (hasEvolved) {
+        await dataStore.saveSchedule(evolvedSchedule);
+      }
+      setTasks(evolvedSchedule);
       setIsLoading(false);
     };
     load();
@@ -107,16 +116,30 @@ export default function StudentMode({ profile, onBack }: StudentModeProps) {
       ? new Date(endTime).getTime() - new Date(taskStartTime).getTime()
       : 0;
 
-    // Record interaction
+    // Calculate engagement score via Analyst agent
+    const expectedDurationMs = activeTask.duration * 60 * 1000;
+    const engagementLevel = dataStore.calculateEngagementScore({
+      durationMs,
+      expectedDurationMs,
+      completionStatus: 'completed'
+    });
+
+    // Record agent activity (Analyst: Engagement Scoring)
+    dataStore.recordAgentActivity('analyst', 'anly-2');
+
+    // Record interaction with computed engagement
     await dataStore.recordInteraction({
       taskId: activeTask.id,
       taskType: activeTask.type,
       startTime: taskStartTime || endTime,
       endTime,
       durationMs,
-      engagement: 'completed',
+      engagement: engagementLevel,
       completionStatus: 'completed'
     });
+
+    // Record agent activity (Guardian: Data Encryption)
+    dataStore.recordAgentActivity('guardian', 'guard-1');
 
     // Generate feedback via IED-ollama
     const prompt = `You are a supportive educational AI companion for a child named ${profile.name}. They just completed a "${activeTask.name}" activity (${activeTask.type}).
@@ -126,23 +149,44 @@ Focus on effort and growth. Communication mode: ${profile.communicationMode}.`;
     const response = await llmService.generateText(prompt);
 
     if (response.error) {
-      setFeedback("Great job! You did amazing work! 🌟");
+      // Use varied offline feedback instead of hardcoded message
+      setFeedback(dataStore.getOfflineFeedback(activeTask.type));
     } else {
       setFeedback(response.text);
     }
 
     setIsFeedbackLoading(false);
 
-    // Update task
-    setTasks(prev => prev.map(t =>
-      t.id === activeTask.id ? { ...t, status: 'completed' as const, engagement: 'high' as const } : t
-    ));
-
-    // Persist updated schedule
+    // Update task with computed engagement
     const updatedTasks = tasks.map(t =>
-      t.id === activeTask.id ? { ...t, status: 'completed' as const, engagement: 'high' as const } : t
+      t.id === activeTask.id ? { ...t, status: 'completed' as const, engagement: engagementLevel } : t
     );
+    setTasks(updatedTasks);
+
+    // Persist updated schedule (use updatedTasks, not stale closure)
     await dataStore.saveSchedule(updatedTasks);
+
+    // Compute and update metrics (Analyst + Adapter agents)
+    dataStore.recordAgentActivity('analyst', 'anly-1');
+    await dataStore.computeAndUpdateMetrics();
+
+    // Adapt difficulty for this task type (Adapter agent)
+    dataStore.recordAgentActivity('adapter', 'adpt-1');
+    await dataStore.adaptDifficulty(activeTask.type);
+
+    // Evolve content for next session (Curriculum + Adapter agents)
+    // This generates new, progressive content so the curriculum never stagnates
+    await dataStore.evolveScheduleAfterCompletion(activeTask, profile, engagementLevel);
+
+    // Auto-generate insights if threshold reached
+    await dataStore.autoGenerateInsightsIfNeeded();
+
+    // Complete the hive cycle
+    dataStore.incrementHiveCycle();
+    dataStore.completeAgentCycle();
+
+    // Increment streak on first completion of the day
+    await dataStore.incrementStreak();
   };
 
   // Close activity view

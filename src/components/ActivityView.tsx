@@ -347,6 +347,120 @@ const ActivityView: React.FC<ActivityViewProps> = ({ activity, onComplete, onClo
           </div>
         );
       
+      case 'communication':
+        return (
+          <div className="text-center w-full">
+            <h3 className="text-3xl font-bold text-purple-400 mb-4">{activity.content?.title || activity.name}</h3>
+            <div className="bg-neutral-800 p-6 rounded-lg mb-6">
+              <p className="text-xl text-gray-300 mb-6">{activity.content?.body || "Let's practice communicating!"}</p>
+              
+              {/* Emotion/Communication Buttons - AAC Style */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">
+                {[
+                  { emoji: '😊', label: 'Happy', color: 'bg-yellow-500/20 border-yellow-500' },
+                  { emoji: '😴', label: 'Tired', color: 'bg-blue-500/20 border-blue-500' },
+                  { emoji: '🎉', label: 'Excited', color: 'bg-pink-500/20 border-pink-500' },
+                  { emoji: '😌', label: 'Calm', color: 'bg-green-500/20 border-green-500' },
+                  { emoji: '😢', label: 'Sad', color: 'bg-blue-600/20 border-blue-600' },
+                  { emoji: '😤', label: 'Frustrated', color: 'bg-red-500/20 border-red-500' },
+                  { emoji: '🤔', label: 'Thinking', color: 'bg-purple-500/20 border-purple-500' },
+                  { emoji: '🤗', label: 'Loved', color: 'bg-rose-500/20 border-rose-500' }
+                ].map((emotion) => (
+                  <button
+                    key={emotion.label}
+                    onClick={() => {
+                      if ('speechSynthesis' in window) {
+                        const utterance = new SpeechSynthesisUtterance(`I feel ${emotion.label}`);
+                        window.speechSynthesis.speak(utterance);
+                      }
+                    }}
+                    className={`${emotion.color} border-2 rounded-xl p-4 flex flex-col items-center gap-2 hover:scale-105 transition-transform active:scale-95`}
+                  >
+                    <span className="text-5xl">{emotion.emoji}</span>
+                    <span className="text-lg font-medium text-white">{emotion.label}</span>
+                  </button>
+                ))}
+              </div>
+              
+              <p className="text-sm text-gray-500 mt-6">
+                Tap a feeling to hear it spoken aloud
+              </p>
+            </div>
+          </div>
+        );
+      
+      case 'movement':
+        return (
+          <div className="text-center w-full">
+            <h3 className="text-3xl font-bold text-emerald-400 mb-4">{activity.content?.title || activity.name}</h3>
+            <div className="bg-neutral-800 p-6 rounded-lg">
+              <div className="text-8xl mb-6 animate-bounce">🏃</div>
+              <p className="text-xl text-gray-300 mb-6">{activity.content?.body || "Time to move your body!"}</p>
+              
+              {/* Movement Activity Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-2xl mx-auto mb-6">
+                {[
+                  { emoji: '🙆', action: 'Stretch up high!' },
+                  { emoji: '🙇', action: 'Touch your toes' },
+                  { emoji: '🔄', action: 'Spin around slowly' },
+                  { emoji: '👏', action: 'Clap 5 times' },
+                  { emoji: '🦘', action: 'Jump 3 times' },
+                  { emoji: '🤗', action: 'Give yourself a hug' }
+                ].map((move, idx) => (
+                  <div
+                    key={idx}
+                    className="bg-emerald-500/20 border border-emerald-500/50 rounded-xl p-4 flex flex-col items-center gap-2"
+                  >
+                    <span className="text-4xl">{move.emoji}</span>
+                    <span className="text-sm text-white">{move.action}</span>
+                  </div>
+                ))}
+              </div>
+              
+              <p className="text-gray-400">
+                Moving your body helps your brain learn better! 💪
+              </p>
+            </div>
+          </div>
+        );
+      
+      case 'break':
+        return (
+          <div className="text-center w-full">
+            <h3 className="text-3xl font-bold text-amber-400 mb-4">{activity.content?.title || activity.name}</h3>
+            <div className="bg-neutral-800 p-6 rounded-lg">
+              <div className="text-8xl mb-6">☀️</div>
+              <p className="text-xl text-gray-300 mb-6">{activity.content?.body || "Time for a break!"}</p>
+              
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-6 max-w-md mx-auto">
+                <h4 className="text-lg font-semibold text-amber-400 mb-3">Break Time Suggestions:</h4>
+                <ul className="text-left text-gray-300 space-y-2">
+                  <li className="flex items-center gap-3">
+                    <span className="text-2xl">🍎</span>
+                    <span>Have a healthy snack</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <span className="text-2xl">💧</span>
+                    <span>Drink some water</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <span className="text-2xl">🚶</span>
+                    <span>Take a short walk</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <span className="text-2xl">😌</span>
+                    <span>Rest your eyes</span>
+                  </li>
+                </ul>
+              </div>
+              
+              <p className="text-gray-400 mt-6">
+                Taking breaks helps you learn better! Come back when you're ready. 🌟
+              </p>
+            </div>
+          </div>
+        );
+      
       default:
         return (
           <div className="text-center">

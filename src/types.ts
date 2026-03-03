@@ -214,3 +214,40 @@ export interface LLMServiceConfig {
   model: string;
   timeout: number;
 }
+
+// -----------------------------------------------------------------------------
+// Administrative Directives (Caregiver → AI → Curriculum)
+// -----------------------------------------------------------------------------
+
+export type DirectiveStatus = 'pending' | 'processing' | 'applied' | 'error';
+
+export interface AdminDirective {
+  id: string;
+  text: string;
+  timestamp: string;
+  status: DirectiveStatus;
+  appliedChanges?: string;
+  errorMessage?: string;
+  processedBy: string;
+}
+
+// -----------------------------------------------------------------------------
+// Learning Progression (Per-subject evolution tracking)
+// -----------------------------------------------------------------------------
+
+export interface ProgressionEntry {
+  timestamp: string;
+  content: string;
+  engagement: string;
+  difficulty: number;
+}
+
+export interface LearningProgression {
+  id: string;
+  taskType: TaskType;
+  currentLevel: number;
+  lastProblem: string;
+  lastDifficulty: number;
+  totalCompleted: number;
+  history: ProgressionEntry[];
+}
